@@ -1,2 +1,2 @@
-starjeweled.py
+python starjeweled.py
 pause

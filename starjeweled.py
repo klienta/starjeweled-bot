@@ -1,21 +1,13 @@
 import os, sys
 import glob
 import cv
-import win32con, win32api
 import PIL
 import ImageGrab
 import time
 from sets import Set
 import re
 import math
-
-def move(x, y):
-  win32api.SetCursorPos((x, y))
-
-def click(x, y):
-    move(x, y)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+import mouse
 
 def cv_screenshot():
   file = "screen_capture.jpg"
@@ -121,9 +113,9 @@ class Board:
     desXpos = self.x + (desX * self.tile_w) + offset
     desYpos = self.y + (desY * self.tile_h) + offset
 
-    click(srcXpos, srcYpos)
-    click(desXpos, desYpos)
-    move(self.x - 100, self.y)
+    mouse.click(srcXpos, srcYpos)
+    mouse.click(desXpos, desYpos)
+    mouse.move(self.x - 100, self.y)
     time.sleep(1)
     self.refreshBoard()
 
