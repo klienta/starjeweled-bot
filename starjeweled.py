@@ -8,14 +8,18 @@ from sets import Set
 import re
 import math
 import mouse
+from numpy import arange
 
 def cv_screenshot():
   file = "screen_capture.jpg"
-  pil_img = ImageGrab.grab().save(file)
-  return cv.LoadImage(file)
-  #cv_img = cv.CreateImageHeader(pil_img.size, cv.IPL_DEPTH_32F, 3)
-  #cv.SetData(cv_img, pil_img.tostring(), pil_img.size[0]*3*4)
-  #return cv_img
+  pil_img = ImageGrab.grab()#.save(file)
+  print pil_img.info
+  #return cv.LoadImage(file)
+
+  channels = 3
+  cv_img = cv.CreateImageHeader(pil_img.size, cv.IPL_DEPTH_32F, channels)
+ # cv.SetData(cv_img, pil_img.tostring(), (pil_img.size[0] * channels * (  ) )
+  return cv_img
 
 def string_replace_index(string, replace, index):
   return string[:index] + replace + string[index + 1:]
@@ -36,54 +40,72 @@ def findInRegion(template, image, x, y, w, h):
   sub = cv.GetSubRect(image, (x, y, w, h))
   return find(template, sub)
 
+class Move:
+    def __init__(self, srcX, srcY, desX, desY):
+        self.src = {'x': srcX, 'y': srcY}
+        self.des = {'x': desX, 'y': desY }
+
 class Board:
-  def __init__(self, num_rows, num_cols, top_left_corner_image, tile_images, tile_w, tile_h):
-    self.tile_w = tile_w
-    self.tile_h = tile_h
+  board = ""
+  num_rows = 8
+  num_cols = 8
 
-    self.num_rows = num_rows
-    self.num_cols = num_cols
 
-    screenshot = cv_screenshot()
-    top_left_corner = cv.LoadImage(top_left_corner_image)
-    board_loc = find(top_left_corner, screenshot)
-    if(board_loc['score'] < .7):
-      print("board not found :(")
-      exit()
-      return
-    self.x = board_loc['x'] + top_left_corner.width
-    self.y = board_loc['y'] + top_left_corner.height
-    self.tile_images = tile_images
-    self.refreshBoard()
+  def findBoard(self, top_left_corner):
+      screenshot = cv_screenshot()
+      top_left_corner = cv.LoadImage(top_left_corner_image)
+      board_loc = find(top_left_corner, screenshot)
+      if(board_loc['score'] < .7):
+          print("board not found :(")
+          exit()
+          return
+      self.x = board_loc['x'] + top_left_corner.width
+      self.y = board_loc['y'] + top_left_corner.height
+
+
+  def setTileImages(self, tile_images, tile_w, tile_h):
+      self.tile_images = tile_images
+      self.tile_w = tile_w
+      self.tile_h = tile_h
 
   def refreshBoard(self):
     """ initialize board with 0 """
     screenshot = cv_screenshot()
     self.board = "0" * self.num_rows * self.num_cols
-    for y in range(self.num_rows):
-      for x in range(self.num_cols):
+    for y in arange(self.num_rows):
+      for x in arange(self.num_cols):
         string_offset = y * self.num_rows + x
         self.board = string_replace_index(self.board, self.getTile(x, y, screenshot), string_offset)
+  def setBoard(self, board_string):
+      self.board = board_string
 
   def show(self):
     print self.board
-    for i in range(self.num_rows):
+    for i in arange(self.num_rows):
       offset = i * self.num_cols
       print self.board[offset:offset + self.num_cols]
 
   def toArray(self):
     a = []
-    for i in range(self.num_rows - 1):
+    for i in arange(self.num_rows):
       offset = (i) * self.num_cols
       a.append(list(self.board[offset:offset + self.num_cols]))
     return a
+
+  def fromArray(self, arr):
+      self.board = ""
+      for row in arr:
+          for col in row:
+              self.board += col
+
+      return self.board
 
   def getTile(self, x, y, screenshot):
     if(x < 0 or x > self.num_cols - 1 or y < 0 or y > self.num_rows - 1):
       return False
 
     string_offset = y * self.num_rows + x
-    if(self.board[string_offset:string_offset + 1] != '0'):
+    if(self.board[string_offset:string_offset + 1]):
       return self.board[string_offset:string_offset + 1]
 
     tileX = self.x + (x * self.tile_w)
@@ -123,7 +145,6 @@ class Board:
     directions = list(directions)
     print 'inspecting ', x, y, self.getTile(x, y, None)
     for dir in directions:
-      print 'looking ', dir
       if dir == 'u':
         if(self.tileIsColor(color, x, y - 1)):
           return {'x':x, 'y':y - 1}
@@ -137,45 +158,42 @@ class Board:
         if(self.tileIsColor(color, x - 1, y)):
           return {'x': x - 1, 'y': y }
 
-  def findMoves(self):
+  def findMove(self):
     print "finding moves"
-    """  
     # look for 4s
     #  xxox
     for m in re.finditer(r'([a-z])\1.\1', self.board):
       color = m.group(0)[:1]
       x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows ))
-      
+      y = int(math.floor(m.start() / self.num_rows))
+
       #check that two blocks are on the same row
-      if( math.floor((m.start() + 3)/8) != y ):
+      if(math.floor((m.start() + 3) / 8) != y):
         continue
-      
+
       print 'found potential 4 ', x, y, m.group(0)
-      
+
       neighborTile = self.findNeighborTile(color, x + 2, y, 'ud')
-      if( neighborTile ):
-        self.movePiece( neighborTile['x'], neighborTile['y'], x + 2, y)
-        return
+      if(neighborTile):
+        return Move(neighborTile['x'], neighborTile['y'], x + 2, y)
 
     # look for 4s
     #  xoxx
     for m in re.finditer(r'([a-z]).\1\1', self.board):
       color = m.group(0)[:1]
       x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows ))
-      
+      y = int(math.floor(m.start() / self.num_rows))
+
       #check that two blocks are on the same row
-      if( math.floor((m.start() + 3)/8) != y ):
+      if(math.floor((m.start() + 3) / 8) != y):
         continue
-      
+
       print 'found potential 4 ', x, y, m.group(0)
-      
+
       neighborTile = self.findNeighborTile(color, x + 1, y, 'ud')
-      if( neighborTile ):
-        self.movePiece( neighborTile['x'], neighborTile['y'], x + 1, y)
-        return
-        
+      if(neighborTile):
+        return Move(neighborTile['x'], neighborTile['y'], x + 1, y)
+
     # Check for Horizontal Blocks
     #  1  4
     # 3oxxo6
@@ -184,41 +202,37 @@ class Board:
     for m in re.finditer(r'([a-z])\1', self.board):
       color = m.group(0)[:1]
       x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows ))
-      
+      y = int(math.floor(m.start() / self.num_rows))
+
       #check that two blocks are on the same row
-      if( math.floor((m.start() + 1)/8) != y ):
+      if(math.floor((m.start() + 1) / 8) != y):
         continue
-      
+
       print 'found pair at ', x, y, m.group(0)
-      
+
       neighborTile = self.findNeighborTile(color, x - 1, y, 'udl')
-      if( neighborTile ):
-        self.movePiece( neighborTile['x'], neighborTile['y'], x - 1, y)
-        return
+      if(neighborTile):
+        return Move(neighborTile['x'], neighborTile['y'], x - 1, y)
 
       neighborTile = self.findNeighborTile(color, x + 2, y, 'udr')
-      if( neighborTile ):
-        self.movePiece( neighborTile['x'], neighborTile['y'], x + 2, y)
-        return
-        
+      if(neighborTile):
+        return Move(neighborTile['x'], neighborTile['y'], x + 2, y)
+
     # Check for Horizontal blocks with gap
     # xox
     for m in re.finditer(r'([a-z]).\1', self.board):
       color = m.group(0)[:1]
       x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows ))
+      y = int(math.floor(m.start() / self.num_rows))
       print 'found pair at ', x, y, m.group(0)
-      
+
       #check that two blocks are on the same row
-      if( math.floor((m.start() + 2)/8) != y ):
+      if(math.floor((m.start() + 2) / 8) != y):
         continue
-      
+
       neighborTile = self.findNeighborTile(color, x + 1, y, 'ud')
-      if( neighborTile ):
-        self.movePiece( neighborTile['x'], neighborTile['y'], x + 1, y)
-        return
-    """
+      if(neighborTile):
+        return Move(neighborTile['x'], neighborTile['y'], x + 1, y)
     # Check for vertical blocks
     #  o
     #  x
@@ -233,12 +247,10 @@ class Board:
 
       neighborTile = self.findNeighborTile(color, x, y - 1, 'ulr')
       if(neighborTile):
-        self.movePiece(neighborTile['x'], neighborTile['y'], x, y - 1)
-        return
+        return Move(neighborTile['x'], neighborTile['y'], x, y - 1)
       neighborTile = self.findNeighborTile(color, x, y + 2, 'dlr')
       if(neighborTile):
-        self.movePiece(neighborTile['x'], neighborTile['y'], x, y + 2)
-        return
+        return Move(neighborTile['x'], neighborTile['y'], x, y + 2)
 
     # Check for vertical blocks
     #  x
@@ -253,19 +265,4 @@ class Board:
 
       neighborTile = self.findNeighborTile(color, x, y + 1, 'lr')
       if(neighborTile):
-        self.movePiece(neighborTile['x'], neighborTile['y'], x, y + 1)
-        return
-
-    print 'no moves found, refreshing'
-
-""" load tiles """
-tiles = {}
-for tile in glob.glob('gfx/tiles/*.bmp'):
-  key, ext = os.path.basename(tile).split('.')
-  tiles[key] = (cv.LoadImage(tile))
-
-b = Board(8, 8, 'gfx/top_left_corner.bmp', tiles, 51, 51);
-b.show()
-
-while 1:
-  b.findMoves()
+        return Move(neighborTile['x'], neighborTile['y'], x, y + 1)
