@@ -260,11 +260,11 @@ class Board:
 
 """ load tiles """
 tiles = {}
-for tile in glob.glob('tiles/*.bmp'):
+for tile in glob.glob('gfx/tiles/*.bmp'):
   key, ext = os.path.basename(tile).split('.')
   tiles[key] = (cv.LoadImage(tile))
 
-b = Board(8, 8, 'top_left_corner.bmp', tiles, 51, 51);
+b = Board(8, 8, 'gfx/top_left_corner.bmp', tiles, 51, 51);
 b.show()
 
 while 1:
