@@ -1,0 +1,2 @@
+starjeweled.py
+pause
