@@ -264,9 +264,7 @@ class Board:
         self.movePiece(neighborTile['x'], neighborTile['y'], x, y + 1)
         return
 
-
     print 'no moves found, refreshing'
-    self.refreshBoard()
 
 """ load tiles """
 tiles = {}
