@@ -3,12 +3,10 @@ import glob
 import cv
 import PIL
 import ImageGrab
-import time
-from sets import Set
-import re
-import math
-import mouse
 from numpy import arange
+
+import mouse
+import move
 
 def cv_screenshot():
   file = "screen_capture.jpg"
@@ -39,11 +37,6 @@ def find(template, image):
 def findInRegion(template, image, x, y, w, h):
   sub = cv.GetSubRect(image, (x, y, w, h))
   return find(template, sub)
-
-class Move:
-    def __init__(self, srcX, srcY, desX, desY):
-        self.src = {'x': srcX, 'y': srcY}
-        self.des = {'x': desX, 'y': desY }
 
 class Board:
   board = ""
@@ -122,147 +115,16 @@ class Board:
   def tileIsColor(self, color, x, y):
     return color == self.getTile(x, y, None)
 
-  def movePiece(self, srcX, srcY, desX, desY):
-    print 'moving ', srcX, srcY, ' to ', desX, desY
+  def movePiece(self, move):
+    print 'moving ', move.src, ' to ', move.des
     offset = self.tile_w / 2
 
-    self.last_moves_x = Set([srcX])
-    self.last_moves_y = Set([srcY])
+    srcXpos = self.x + ( move.src.x * self.tile_w) + offset
+    srcYpos = self.y + ( move.src.y * self.tile_h) + offset
 
-    srcXpos = self.x + (srcX * self.tile_w) + offset
-    srcYpos = self.y + (srcY * self.tile_h) + offset
-
-    desXpos = self.x + (desX * self.tile_w) + offset
-    desYpos = self.y + (desY * self.tile_h) + offset
+    desXpos = self.x + ( move.des.x * self.tile_w) + offset
+    desYpos = self.y + ( move.des.y * self.tile_h) + offset
 
     mouse.click(srcXpos, srcYpos)
     mouse.click(desXpos, desYpos)
     mouse.move(self.x - 100, self.y)
-    time.sleep(1)
-    self.refreshBoard()
-
-  def findNeighborTile(self, color, x, y, directions):
-    directions = list(directions)
-    print 'inspecting ', x, y, self.getTile(x, y, None)
-    for dir in directions:
-      if dir == 'u':
-        if(self.tileIsColor(color, x, y - 1)):
-          return {'x':x, 'y':y - 1}
-      elif dir == 'r':
-        if(self.tileIsColor(color, x + 1, y)):
-          return {'x': x + 1, 'y': y}
-      elif dir == 'd':
-        if(self.tileIsColor(color, x, y + 1)):
-          return {'x': x, 'y': y + 1}
-      elif dir == 'l':
-        if(self.tileIsColor(color, x - 1, y)):
-          return {'x': x - 1, 'y': y }
-
-  def findMove(self):
-    print "finding moves"
-    # look for 4s
-    #  xxox
-    for m in re.finditer(r'([a-z])\1.\1', self.board):
-      color = m.group(0)[:1]
-      x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows))
-
-      #check that two blocks are on the same row
-      if(math.floor((m.start() + 3) / 8) != y):
-        continue
-
-      print 'found potential 4 ', x, y, m.group(0)
-
-      neighborTile = self.findNeighborTile(color, x + 2, y, 'ud')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x + 2, y)
-
-    # look for 4s
-    #  xoxx
-    for m in re.finditer(r'([a-z]).\1\1', self.board):
-      color = m.group(0)[:1]
-      x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows))
-
-      #check that two blocks are on the same row
-      if(math.floor((m.start() + 3) / 8) != y):
-        continue
-
-      print 'found potential 4 ', x, y, m.group(0)
-
-      neighborTile = self.findNeighborTile(color, x + 1, y, 'ud')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x + 1, y)
-
-    # Check for Horizontal Blocks
-    #  1  4
-    # 3oxxo6
-    #  2  5
-    print 'finding moves on ', self.board
-    for m in re.finditer(r'([a-z])\1', self.board):
-      color = m.group(0)[:1]
-      x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows))
-
-      #check that two blocks are on the same row
-      if(math.floor((m.start() + 1) / 8) != y):
-        continue
-
-      print 'found pair at ', x, y, m.group(0)
-
-      neighborTile = self.findNeighborTile(color, x - 1, y, 'udl')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x - 1, y)
-
-      neighborTile = self.findNeighborTile(color, x + 2, y, 'udr')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x + 2, y)
-
-    # Check for Horizontal blocks with gap
-    # xox
-    for m in re.finditer(r'([a-z]).\1', self.board):
-      color = m.group(0)[:1]
-      x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows))
-      print 'found pair at ', x, y, m.group(0)
-
-      #check that two blocks are on the same row
-      if(math.floor((m.start() + 2) / 8) != y):
-        continue
-
-      neighborTile = self.findNeighborTile(color, x + 1, y, 'ud')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x + 1, y)
-    # Check for vertical blocks
-    #  o
-    #  x
-    #  x
-    #  o
-    for m in re.finditer(r'([a-z]).{7}\1', self.board):
-      color = m.group(0)[:1]
-      x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows))
-
-      print 'found vertical pair at ', x, y, m.group(0), m.start(), m.end()
-
-      neighborTile = self.findNeighborTile(color, x, y - 1, 'ulr')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x, y - 1)
-      neighborTile = self.findNeighborTile(color, x, y + 2, 'dlr')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x, y + 2)
-
-    # Check for vertical blocks
-    #  x
-    #  o
-    #  x
-    for m in re.finditer(r'([a-z]).{15}\1', self.board):
-      color = m.group(0)[:1]
-      x = m.start() % self.num_rows
-      y = int(math.floor(m.start() / self.num_rows))
-
-      print 'found vertical pair at ', x, y, m.group(0), m.start(), m.end()
-
-      neighborTile = self.findNeighborTile(color, x, y + 1, 'lr')
-      if(neighborTile):
-        return Move(neighborTile['x'], neighborTile['y'], x, y + 1)
