@@ -27,7 +27,7 @@ class Strategy:
     def findMove(self):
         #TODO: fix indention
         
-        print "finding moves"
+        print 'finding moves on ', self.board
         # look for 4s
         #  xxox
         for m in re.finditer(r'([a-z])\1.\1', self.board.board):
@@ -66,7 +66,6 @@ class Strategy:
         #  1  4
         # 3oxxo6
         #  2  5
-        print 'finding moves on ', self.board.board
         for m in re.finditer(r'([a-z])\1', self.board.board):
           color = m.group(0)[:1]
           x = m.start() % self.board.num_rows

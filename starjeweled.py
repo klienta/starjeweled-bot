@@ -71,12 +71,16 @@ class Board:
         self.board = string_replace_index(self.board, self.getTile(x, y, screenshot), string_offset)
   def setBoard(self, board_string):
       self.board = board_string
+      
 
   def show(self):
     print self.board
     for i in arange(self.num_rows):
       offset = i * self.num_cols
       print self.board[offset:offset + self.num_cols]
+
+  def __str__(self):
+    return self.board
 
   def toArray(self):
     a = []

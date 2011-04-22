@@ -12,6 +12,7 @@ class MoveTestCase(unittest.TestCase):
         self.assertEqual(m.src['y'], 1, 'move src y')
         self.assertEqual(m.des['x'], 2, 'move des x')
         self.assertEqual(m.des['y'], 3, 'move des y')
+        self.assertEqual( str(m), "(0, 1) to (2, 3)", 'string conversion test')
 
 if __name__ == '__main__':
     unittest.main()
