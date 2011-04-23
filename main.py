@@ -1,5 +1,6 @@
 import sys
-import starjeweled
+from starjeweled import *
+from strategy import *
 
 def main():
     """ load tiles """
@@ -8,9 +9,16 @@ def main():
       key, ext = os.path.basename(tile).split('.')
       tiles[key] = (cv.LoadImage(tile))
 
-    b = Board(8, 8)
-    b.setTiles(tiles, 51, 51)
-
+    b = Board()
+    b.setTileImages(tiles, 51, 51)
+    b.findBoard('gfx/top_left_corner.bmp')
+    
+    s = Strategy(b)
+    while 1:
+      m = s.findMove()
+      if( m ):
+        b.movePiece(m)
+      b.refreshBoard()
 
 if __name__ == '__main__':
     main()

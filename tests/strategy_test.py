@@ -123,5 +123,12 @@ class StrategyTestCase(unittest.TestCase):
           empty_row,
         ])
         self.assertEqual(self.strategy.findMove(), None)
+        
+    def testScenario(self): 
+      self.b.setBoard('pbbyprbyrkbbpggbp')
+      self.b.show()
+      print(str(self.strategy.findMove()))
+      
+         
 if __name__ == '__main__':
     unittest.main()

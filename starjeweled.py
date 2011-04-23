@@ -10,14 +10,8 @@ import move
 
 def cv_screenshot():
   file = "screen_capture.jpg"
-  pil_img = ImageGrab.grab()#.save(file)
-  print pil_img.info
-  #return cv.LoadImage(file)
-
-  channels = 3
-  cv_img = cv.CreateImageHeader(pil_img.size, cv.IPL_DEPTH_32F, channels)
- # cv.SetData(cv_img, pil_img.tostring(), (pil_img.size[0] * channels * (  ) )
-  return cv_img
+  pil_img = ImageGrab.grab().save(file)
+  return cv.LoadImage(file)
 
 def string_replace_index(string, replace, index):
   return string[:index] + replace + string[index + 1:]
@@ -44,7 +38,7 @@ class Board:
   num_cols = 8
 
 
-  def findBoard(self, top_left_corner):
+  def findBoard(self, top_left_corner_image):
       screenshot = cv_screenshot()
       top_left_corner = cv.LoadImage(top_left_corner_image)
       board_loc = find(top_left_corner, screenshot)
@@ -64,11 +58,12 @@ class Board:
   def refreshBoard(self):
     """ initialize board with 0 """
     screenshot = cv_screenshot()
-    self.board = "0" * self.num_rows * self.num_cols
+    self.board = "?" * self.num_rows * self.num_cols
     for y in arange(self.num_rows):
       for x in arange(self.num_cols):
         string_offset = y * self.num_rows + x
         self.board = string_replace_index(self.board, self.getTile(x, y, screenshot), string_offset)
+    print 'refreshing board ', self.board
   def setBoard(self, board_string):
       self.board = board_string
       
@@ -102,12 +97,12 @@ class Board:
       return False
 
     string_offset = y * self.num_rows + x
-    if(self.board[string_offset:string_offset + 1]):
+    if(self.board[string_offset:string_offset + 1] and self.board[string_offset:string_offset + 1] != '?'):
       return self.board[string_offset:string_offset + 1]
 
     tileX = self.x + (x * self.tile_w)
     tileY = self.y + (y * self.tile_h)
-
+    
     if(not screenshot):
       screenshot = cv_screenshot()
     for color in self.tile_images:
@@ -123,11 +118,11 @@ class Board:
     print 'moving ', move.src, ' to ', move.des
     offset = self.tile_w / 2
 
-    srcXpos = self.x + ( move.src.x * self.tile_w) + offset
-    srcYpos = self.y + ( move.src.y * self.tile_h) + offset
+    srcXpos = self.x + ( move.src['x'] * self.tile_w) + offset
+    srcYpos = self.y + ( move.src['y'] * self.tile_h) + offset
 
-    desXpos = self.x + ( move.des.x * self.tile_w) + offset
-    desYpos = self.y + ( move.des.y * self.tile_h) + offset
+    desXpos = self.x + ( move.des['x'] * self.tile_w) + offset
+    desYpos = self.y + ( move.des['y'] * self.tile_h) + offset
 
     mouse.click(srcXpos, srcYpos)
     mouse.click(desXpos, desYpos)
