@@ -2,6 +2,7 @@ import mouse
 from math import floor
 from numpy import arange
 import re
+from move import *
 
 class Strategy:
     def __init__(self, board):
