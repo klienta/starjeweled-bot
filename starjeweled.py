@@ -107,7 +107,7 @@ class Board:
       screenshot = cv_screenshot()
     for color in self.tile_images:
       results = findInRegion(self.tile_images[color], screenshot, tileX, tileY, self.tile_w, self.tile_h)
-      if(results['score'] > .6):
+      if(results['score'] > .7):
         self.board = string_replace_index(self.board, color, string_offset)
         return color
     return '0'
