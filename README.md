@@ -1,3 +1,5 @@
+NOTE: You must play SC2 in windowed mode for this to work.
+
 # Requirements
 
 * Python 2.7 ( If on Windows, I recommend using ActivePython http://www.activestate.com/activepython/downloads )
